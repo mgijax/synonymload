@@ -19,7 +19,7 @@ setenv LOG	$0.log
 
 date >& $LOG
 
-${SYNLOAD}/synonymload.py -S${DBSERVER} -D${DBNAME} -U${DBUSER} -P${DBPASSWORDFILE} -M${MODE} -I${INPUTFILE} >>& $LOG
+${SYNLOAD}/synonymload.py -S${DBSERVER} -D${DBNAME} -U${DBUSER} -P${DBPASSWORDFILE} -M${MODE} -O${OBJECTTYPE} -I${INPUTFILE} >>& $LOG
 
 date >>& $LOG
 
