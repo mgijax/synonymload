@@ -22,7 +22,7 @@
 #		field 2: Synonym
 #		field 3: Synonym Type (from MGI_Synonym_Type)
 #		field 4: Reference (J:)
-#		field 5: Submitted By
+#		field 5: Created By
 #
 # Parameters:
 #	-S = database server
@@ -113,7 +113,6 @@ synFileName = ''	# file name
 mode = ''		# processing mode
 mgiTypeKey = 0		# ACC_MGIType._MGIType_key
 synKey = 0		# MGI_Synonym._Synonym_key
-userKey = 0
 
 synTypeDict = {}	# dictionary of synonym types for quick lookup
 referenceDict = {}	# dictionary of references for quick lookup
@@ -356,8 +355,7 @@ def loadDictionaries():
 	# requires:
 	#
 	# effects:
-	#	loads global dictionaries: statusDict, logicalDBDict
-	#	for quicker lookup
+	#	loads global dictionaries for quicker lookup
 	#
 	# returns:
 	#	nothing

@@ -1,13 +1,12 @@
 #!/bin/csh -f
 
 #
-# Wrapper script to create & load new marker synonyms
+# Wrapper script to create & load new synonyms
 #
 # Usage:  synonymload.csh
 #
 
-# DB schema directory; its Configuration file will set up all you need
-setenv SCHEMADIR /usr/local/mgi/live/dbutils/mgd/mgddbschema
+setenv SCHEMADIR	/usr/local/mgi/live/dbutils/mgd/mgddbschema
 setenv INPUTFILE	/data/...
 setenv MODE		preview
 setenv OBJECTTYPE	Strain
