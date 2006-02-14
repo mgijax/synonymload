@@ -1,6 +1,5 @@
 #!/usr/local/bin/python
 
-'''
 #
 # Purpose:
 #
@@ -83,7 +82,6 @@
 # 02/08/2006	lec
 #	- converted from MRK_Other synonym load; primarily for JRS cutover
 #
-'''
 
 import sys
 import os
@@ -91,7 +89,6 @@ import string
 import getopt
 import db
 import mgi_utils
-import accessionlib
 import loadlib
 
 #globals
@@ -120,7 +117,6 @@ referenceDict = {}	# dictionary of references for quick lookup
 loaddate = loadlib.loaddate
 
 def showUsage():
-	'''
 	# requires:
 	#
 	# effects:
@@ -128,7 +124,6 @@ def showUsage():
 	# with status of 1.
 	#
 	# returns:
-	'''
  
 	usage = 'usage: %s -S server\n' % sys.argv[0] + \
 		'-D database\n' + \
@@ -139,7 +134,6 @@ def showUsage():
 	exit(1, usage)
  
 def exit(status, message = None):
-	'''
 	# requires: status, the numeric exit status (integer)
 	#           message (string)
 	#
@@ -148,7 +142,6 @@ def exit(status, message = None):
 	#
 	# returns:
 	#
-	'''
  
 	if message is not None:
 		sys.stderr.write('\n' + str(message) + '\n')
@@ -167,7 +160,6 @@ def exit(status, message = None):
 	sys.exit(status)
  
 def init():
-	'''
 	# requires: 
 	#
 	# effects: 
@@ -178,7 +170,6 @@ def init():
 	#
 	# returns:
 	#
-	'''
  
 	global inputFile, outputFile, diagFile, errorFile, errorFileName, diagFileName, passwordFileName
 	global synFileName, synFile, mode, synKey, mgiTypeKey
@@ -278,10 +269,9 @@ def init():
 
 	errorFile.write('Start Date/Time: %s\n\n' % (mgi_utils.date()))
 
-	mgiTypeKey = accessionlib.get_MGIType_key(mgiType)
+	mgiTypeKey = loadlib.verifyMGIType(mgiType, 0, errorFile)
 
 def verifyMode():
-	'''
 	# requires:
 	#
 	# effects:
@@ -293,7 +283,6 @@ def verifyMode():
 	# returns:
 	#	nothing
 	#
-	'''
 
 	global DEBUG, bcpon
 
@@ -304,7 +293,6 @@ def verifyMode():
 		exit(1, 'Invalid Processing Mode:  %s\n' % (mode))
 
 def verifySynonymType(synType, lineNum):
-	'''
 	# requires:
 	#	synType - the Synonym Type
 	#	lineNum - the line number of the record from the input file
@@ -318,7 +306,6 @@ def verifySynonymType(synType, lineNum):
 	#	0 if the Synonym Type is invalid
 	#	Synonym Type Key if the Synonym Type is valid
 	#
-	'''
 
 	synTypeKey = 0
 
@@ -331,7 +318,6 @@ def verifySynonymType(synType, lineNum):
 	return(synTypeKey)
 
 def setPrimaryKeys():
-	'''
 	# requires:
 	#
 	# effects:
@@ -340,7 +326,6 @@ def setPrimaryKeys():
 	# returns:
 	#	nothing
 	#
-	'''
 
 	global synKey
 
@@ -351,7 +336,6 @@ def setPrimaryKeys():
                 synKey = results[0]['maxKey']
 
 def loadDictionaries():
-	'''
 	# requires:
 	#
 	# effects:
@@ -359,7 +343,6 @@ def loadDictionaries():
 	#
 	# returns:
 	#	nothing
-	'''
 
 	global synTypeDict
 
@@ -368,7 +351,6 @@ def loadDictionaries():
 		synTypeDict[r['synonymType']] = r['_SynonymType_key']
 
 def processFile():
-	'''
 	# requires:
 	#
 	# effects:
@@ -378,7 +360,6 @@ def processFile():
 	# returns:
 	#	nothing
 	#
-	'''
 
 	global synKey
 
@@ -402,7 +383,7 @@ def processFile():
 		except:
 			exit(1, 'Invalid Line (%d): %s\n' % (lineNum, line))
 
-		objectKey = accessionlib.get_Object_key(accID, _MGIType_key = mgiTypeKey)
+		objectKey = loadlib.verifyObject(accID, mgiTypeKey, None, lineNum, errorFile)
 		synTypeKey = verifySynonymType(synType, lineNum, errorFile)
 		referenceKey = loadlib.verifyReference(jnum, lineNum, errorFile)
 		userKey = loadlib.verifyUser(user, lineNum, errorFile)
@@ -428,7 +409,6 @@ def processFile():
 #	end of "for line in inputFile.readlines():"
 
 def bcpFiles():
-	'''
 	# requires:
 	#
 	# effects:
@@ -437,7 +417,6 @@ def bcpFiles():
 	# returns:
 	#	nothing
 	#
-	'''
 
 	bcpdelim = "|"
 
