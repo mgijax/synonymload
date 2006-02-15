@@ -97,7 +97,6 @@ DEBUG = 0		# set DEBUG to false unless preview mode is selected
 bcpon = 1		# can the bcp files be bcp-ed into the database?  default is yes.
 
 inputFile = ''		# file descriptor
-outputFile = ''		# file descriptor
 diagFile = ''		# file descriptor
 errorFile = ''		# file descriptor
 synFile = ''		# file descriptor
@@ -110,6 +109,8 @@ synFileName = ''	# file name
 mode = ''		# processing mode
 mgiTypeKey = 0		# ACC_MGIType._MGIType_key
 synKey = 0		# MGI_Synonym._Synonym_key
+createdBy = 'jrs_load'
+createdByKey = 0
 
 synTypeDict = {}	# dictionary of synonym types for quick lookup
 referenceDict = {}	# dictionary of references for quick lookup
@@ -148,7 +149,6 @@ def exit(status, message = None):
  
 	try:
 		inputFile.close()
-		outputFile.close()
 		diagFile.write('\n\nEnd Date/Time: %s\n' % (mgi_utils.date()))
 		errorFile.write('\n\nEnd Date/Time: %s\n' % (mgi_utils.date()))
 		diagFile.close()
@@ -171,8 +171,8 @@ def init():
 	# returns:
 	#
  
-	global inputFile, outputFile, diagFile, errorFile, errorFileName, diagFileName, passwordFileName
-	global synFileName, synFile, mode, synKey, mgiTypeKey
+	global inputFile, diagFile, errorFile, errorFileName, diagFileName, passwordFileName
+	global synFileName, synFile, mode, synKey, mgiTypeKey, createdByKey
  
 	try:
 		optlist, args = getopt.getopt(sys.argv[1:], 'S:D:U:P:M:O:I:')
@@ -224,7 +224,6 @@ def init():
  
 	fdate = mgi_utils.date('%m%d%Y')	# current date
 	head, tail = os.path.split(inputFileName) 
-        outputFileName = inputFileName + '.out'
 	diagFileName = tail + '.' + fdate + '.diagnostics'
 	errorFileName = tail + '.' + fdate + '.error'
 	synFileName = tail + '.MGI_Synonym.bcp'
@@ -233,11 +232,6 @@ def init():
 		inputFile = open(inputFileName, 'r')
 	except:
 		exit(1, 'Could not open file %s\n' % inputFileName)
-		
-	try:
-		outputFile = open(outputFileName, 'w')
-	except:
-		exit(1, 'Could not open file %s\n' % outputFileName)
 		
 	try:
 		diagFile = open(diagFileName, 'w')
@@ -270,6 +264,10 @@ def init():
 	errorFile.write('Start Date/Time: %s\n\n' % (mgi_utils.date()))
 
 	mgiTypeKey = loadlib.verifyMGIType(mgiType, 0, errorFile)
+	createdByKey = loadlib.verifyUser(createdBy, 0, errorFile)
+
+        db.sql('delete from MGI_Synonym where _MGIType_key = %d ' % (mgiTypeKey) + \
+			'and _CreatedBy_key = %d ' % (createdByKey), None)
 
 def verifyMode():
 	# requires:
@@ -346,7 +344,8 @@ def loadDictionaries():
 
 	global synTypeDict
 
-	results = db.sql('select _SynonymType_key, synonymType from MGI_SynonymType where _Object_key = %s' % (mgiTypeKey), 'auto')
+	results = db.sql('select _SynonymType_key, synonymType from MGI_SynonymType ' + \
+		'where _MGIType_key = %s' % (mgiTypeKey), 'auto')
 	for r in results:
 		synTypeDict[r['synonymType']] = r['_SynonymType_key']
 
@@ -364,6 +363,7 @@ def processFile():
 	global synKey
 
 	lineNum = 0
+
 	# For each line in the input file
 
 	for line in inputFile.readlines():
@@ -379,19 +379,29 @@ def processFile():
 			synonym = tokens[1]
 			synType = tokens[2]
 			jnum = tokens[3]
-			user = tokens[4]
+#			createdBy = tokens[4]
 		except:
 			exit(1, 'Invalid Line (%d): %s\n' % (lineNum, line))
 
 		objectKey = loadlib.verifyObject(accID, mgiTypeKey, None, lineNum, errorFile)
-		synTypeKey = verifySynonymType(synType, lineNum, errorFile)
-		referenceKey = loadlib.verifyReference(jnum, lineNum, errorFile)
-		userKey = loadlib.verifyUser(user, lineNum, errorFile)
+		synTypeKey = verifySynonymType(synType, lineNum)
+#		createdByKey = loadlib.verifyUser(createdBy, lineNum, errorFile)
+
+		# if reference is J:0, then no reference is given
+
+		if jnum == 'J:0':
+		    referenceKey = ''
+		else:
+		    referenceKey = loadlib.verifyReference(jnum, lineNum, errorFile)
+
+		if len(synonym) == 0:
+		    errorFile.write('Invalid Synonym:Empty (%d) %s\n' % (lineNum, synonym))
 
 		if objectKey == 0 or \
 			synTypeKey == 0 or \
 			referenceKey == 0 or \
-			userKey == 0:
+			createdByKey == 0 or \
+			len(synonym) == 0:
 
 			# set error flag to true
 			error = 1
@@ -403,7 +413,7 @@ def processFile():
 		# if no errors, process
 
 		synFile.write('%d|%d|%d|%d|%s|%s|%s|%s|%s|%s\n' \
-			% (synKey, objectKey, mgiTypeKey, synTypeKey, referenceKey, synonym, userKey, userKey, loaddate, loaddate))
+			% (synKey, objectKey, mgiTypeKey, synTypeKey, referenceKey, synonym, createdByKey, createdByKey, loaddate, loaddate))
 		synKey = synKey + 1
 
 #	end of "for line in inputFile.readlines():"
