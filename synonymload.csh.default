@@ -7,7 +7,7 @@
 #
 
 setenv SCHEMADIR	/usr/local/mgi/live/dbutils/mgd/mgddbschema
-setenv INPUTFILE	/data/...
+setenv INPUTFILE	?
 setenv MODE		preview
 setenv OBJECTTYPE	Strain
 setenv SYNLOAD		/usr/local/mgi/live/dataload/synonymload/synonymload.py
