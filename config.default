@@ -1,0 +1,14 @@
+#!/bin/csh -f
+
+#
+# Synonym load configuration file
+#
+
+source ./Configuration
+
+setenv SYNMODE		load
+setenv SYNDATADIR      /data/loads/go/gotext
+setenv SYNINPUTFILE	${SYNDATADIR}/input/gotext.txt
+setenv SYNLOG		${SYNDATADIR}/logs//gotext.log
+setenv SYNOBJECTTYPE	Marker
+
