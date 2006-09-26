@@ -156,7 +156,7 @@ def init():
  
 	db.useOneConnection(1)
         db.set_sqlUser(user)
-        db.set_sqlPassword(passwordFileName)
+        db.set_sqlPasswordFromFile(passwordFileName)
  
 	fdate = mgi_utils.date('%m%d%Y')	# current date
 	head, tail = os.path.split(inputFileName) 
