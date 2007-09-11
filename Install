@@ -1,0 +1,66 @@
+#!/bin/sh
+
+#
+# Installation script for synonymload
+#
+# 1) cp synonymload.config.default synonymload.config and edit
+#    as necessary.
+#
+# 2) Install
+#
+
+usage=Install
+
+#
+#  Function called when the install fails.
+#
+installFailed ()
+{
+    echo "Installation Failed: `date`"
+    exit 1
+}
+
+#
+#  Verify the arguments to the script, there shouldn't be any
+#
+if [ $# -ne 0 ]
+then
+    echo "Usage: ${usage}"
+    installFailed
+fi
+
+#
+# Make sure config file exists and source it
+#
+cd `dirname $0`
+LOAD_CONFIG=synonymload.config
+
+if [ -r ${LOAD_CONFIG} ]
+then
+    . ${LOAD_CONFIG}
+else
+    echo "Cannot source configuration file: ${LOAD_CONFIG}"
+    installFailed
+fi
+
+#
+# create directories
+#
+
+for i in  ${LOGDIR} ${OUTPUTDIR}
+do
+    if [ ! -d ${i} ]
+    then
+	mkdir -p ${i} >/dev/null 2>&1
+	if [ $? -eq 0 ]
+	then
+	      echo "Directory created: ${i}"
+	else
+	      echo "Cannot create directory: ${i}"
+	      installFailed
+	fi
+    else
+	echo "Directory already exists: ${i}"
+    fi
+    chmod -f 755 ${i}
+done

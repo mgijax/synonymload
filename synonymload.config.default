@@ -1,0 +1,59 @@
+#!/bin/sh
+
+#
+# default configuration file
+#
+
+#
+#  If the MGICONFIG environment variable does not have a local override,
+#  use the default "live" settings.
+#
+if [ "${MGICONFIG}" = "" ]
+then
+    MGICONFIG=/usr/local/mgi/live/mgiconfig
+    export MGICONFIG
+fi
+
+# establish name of master config and source it
+CONFIG_MASTER=${MGICONFIG}/master.config.sh
+
+export CONFIG_MASTER
+
+. ${CONFIG_MASTER}
+
+# preview (no database changes), load, or reload (first delete by createdBy)
+LOAD_MODE=preview
+export LOAD_MODE
+
+#Jnumber for the load, use J:0 if no Jnumber
+JNUM=J:105741
+export JNUM
+
+# MGI_User login for this load e.g. mirbase_synload
+CREATEDBY=mirbase_synload
+export CREATEDBY
+
+# output directory 
+DATADIR=/data/loads/synonymload/mirbase
+export DATADIR
+
+# full path to input file, typically a TR directory
+INPUTFILE=/mgi/all/wts_projects/8400/8459/synonymload.txt
+export INPUTFILE
+
+# full path to log directory
+LOGDIR=${DATADIR}/logs
+export LOGDIR
+
+# full path to log file
+SYNLOG=${LOGDIR}/synonymload.log
+export SYNLOG
+
+# full path to output directory
+OUTPUTDIR=${DATADIR}/output
+export OUTPUTDIR
+
+# object to which the synonym will be associated e.g. 
+# Marker, Allele, Strain
+OBJECT_TYPE=Marker
+export OBJECT_TYPE
