@@ -20,18 +20,16 @@
 #		field 1: Object Accession ID
 #		field 2: Synonym
 #		field 3: Synonym Type (from MGI_Synonym_Type)
-#		field 4: Reference (J:)
-#		field 5: Created By
 #
 #	processing modes:
 #		load - load the data
 #
-#		preview - perform all record verifications but do not load the data or
-#		          make any changes to the database.  used for testing or to preview
-#			  the load.
+#		preview - perform all record verifications, create all files
+#		          but do not execute bcp or make any changes to the 
+#			  database. 
 #
-#		reload - delete existing synonyms for specified object type/reference
-#	                 (assumes that that same reference is used for each synonym)
+#		reload - delete existing synonyms by 'createdBy' and object type
+#	                 then process records and do bcp
 #
 # Output:
 #
@@ -45,8 +43,10 @@
 # Processing:
 #
 #	1. Verify Mode.
-#		if mode = load:  process records
-#		if mode = preview:  set "DEBUG" to True
+#		if mode = load:  process records, do bcp
+#		if mode = preview:  set "bcpon" to False
+#		if mode = reload: first delete existing synonyms by 'createdBy'
+#			  then process records and do bcp
 #
 #	2. Load Synonym Types into dictionary for quicker lookup.
 #
@@ -60,10 +60,10 @@
 #
 #	3.  Verify the J: is valid.
 #	    If the verification fails, report the error and skip the record.
-#	    If the verification succeeeds, store the Jnum/Key pair in a dictionary
-#	    for future reference.
+#	    If the verification succeeds, store the Jnum/Key pair in a 
+#	    dictionary for future reference.
 #
-#	4.  Verify the Submitted By is provided (i.e. is not null).
+#	4.  Verify the Created By is valid
 #	    If the verification fails, report the error and skip the record.
 #
 #	5.  Create the Synonym record.
@@ -73,6 +73,8 @@
 # 02/08/2006	lec
 #	- converted from MRK_Other synonym load; primarily for JRS cutover
 #
+# 09/04/2007	sc
+#	- updated to be less JRS-centric and configurable
 
 import sys
 import os
@@ -88,12 +90,16 @@ import loadlib
 #
 user = os.environ['MGD_DBUSER']
 passwordFileName = os.environ['MGD_DBPASSWORDFILE']
-mode = os.environ['SYNMODE']
-mgiType = os.environ['SYNOBJECTTYPE']
-inputFileName = os.environ['SYNINPUTFILE']
+mode = os.environ['LOAD_MODE']
+mgiType = os.environ['OBJECT_TYPE']
+inputFileName = os.environ['INPUTFILE']
+createdBy = os.environ['CREATEDBY']
+jnum = os.environ['JNUM']
+logDir = os.environ['LOGDIR']
+outputDir = os.environ['OUTPUTDIR']
 
-DEBUG = 0		# set DEBUG to false unless preview mode is selected
-bcpon = 1		# can the bcp files be bcp-ed into the database?  default is yes.
+bcpon = 1		# can the bcp files be bcp-ed into the database?  
+			# DEFAult is yes.
 
 inputFile = ''		# file descriptor
 diagFile = ''		# file descriptor
@@ -105,12 +111,12 @@ errorFileName = ''	# file name
 synFileName = ''	# file name
 
 mgiTypeKey = 0		# ACC_MGIType._MGIType_key
+referenceKey = 0	# MGI_Synonym._Refs_key
 synKey = 0		# MGI_Synonym._Synonym_key
-createdBy = 'jrs_load'
-createdByKey = 0
+createdByKey = 0        # MGI_Synonym._CreatedBy_key
 
 synTypeDict = {}	# dictionary of synonym types for quick lookup
-referenceDict = {}	# dictionary of references for quick lookup
+synDict = {}		# dictionary of
 
 loaddate = loadlib.loaddate
 
@@ -160,9 +166,9 @@ def init():
  
 	fdate = mgi_utils.date('%m%d%Y')	# current date
 	head, tail = os.path.split(inputFileName) 
-	diagFileName = tail + '.' + fdate + '.diagnostics'
-	errorFileName = tail + '.' + fdate + '.error'
-	synFileName = tail + '.MGI_Synonym.bcp'
+	diagFileName = logDir + '/' + tail + '.' + fdate + '.diagnostics'
+	errorFileName = logDir + '/' + tail + '.' + fdate + '.error'
+	synFileName = outputDir + '/' + tail + '.MGI_Synonym.bcp'
 
 	try:
 		inputFile = open(inputFileName, 'r')
@@ -201,7 +207,23 @@ def init():
 	mgiTypeKey = loadlib.verifyMGIType(mgiType, 0, errorFile)
 	createdByKey = loadlib.verifyUser(createdBy, 0, errorFile)
 
-        db.sql('delete from MGI_Synonym where _MGIType_key = %d ' % (mgiTypeKey) + \
+        # if reference is J:0, then no reference is given
+	if jnum == 'J:0':
+		referenceKey = ''
+	else:
+		referenceKey = loadlib.verifyReference(jnum, 0, errorFile)
+
+        # exit if we can't resolve mgiType, createdBy or jnum
+	if mgiTypeKey == 0 or \
+		createdByKey == 0 or \
+		referenceKey == 0:
+	    exit(1)
+
+        if mode == 'reload':
+		print 'mode is: %s, deleting synonyms' % mode
+		sys.stdout.flush()
+        	db.sql('delete from MGI_Synonym ' + \
+			'where _MGIType_key = %d ' % (mgiTypeKey) + \
 			'and _CreatedBy_key = %d ' % (createdByKey), None)
 
 def verifyMode():
@@ -217,12 +239,10 @@ def verifyMode():
 	#	nothing
 	#
 
-	global DEBUG, bcpon
-
+	global bcpon
 	if mode == 'preview':
-		DEBUG = 1
 		bcpon = 0
-	elif mode != 'load':
+	elif  mode != 'load' and mode != 'reload':
 		exit(1, 'Invalid Processing Mode:  %s\n' % (mode))
 
 def verifySynonymType(synType, lineNum):
@@ -277,13 +297,30 @@ def loadDictionaries():
 	# returns:
 	#	nothing
 
-	global synTypeDict
-
+	global synTypeDict, synDict
+	
+	# create synonym type lookup
 	results = db.sql('select _SynonymType_key, synonymType from MGI_SynonymType ' + \
 		'where _MGIType_key = %s' % (mgiTypeKey), 'auto')
 	for r in results:
 		synTypeDict[r['synonymType']] = r['_SynonymType_key']
 
+	# create existing synonym lookup for all MGI accessioned objects
+	results = db.sql('select a.accid as mgiID, s.synonym ' + \
+	    'from ACC_Accession a, MGI_Synonym s ' + \
+	    'where a._LogicalDB_key = 1 ' + \
+	    'and a.preferred = 1 ' + \
+	    'and a.prefixPart = "MGI:" ' + \
+	    'and a._MGIType_key = s._MGIType_key ' + \
+	    'and a._Object_key = s._Object_key', 'auto')
+	for r in results:
+	    mgiID = r['mgiID']
+	    
+	    synonym = r['synonym']
+	    if mgiID not in synDict.keys():
+	        synDict[mgiID] = [synonym]
+	    else:
+		synDict[mgiID].append(synonym)
 def processFile():
 	# requires:
 	#
@@ -296,7 +333,7 @@ def processFile():
 	#
 
 	global synKey
-
+        mgiIdsWithSynonyms = synDict.keys()
 	lineNum = 0
 
 	# For each line in the input file
@@ -313,29 +350,20 @@ def processFile():
 			accID = tokens[0]
 			synonym = tokens[1]
 			synType = tokens[2]
-			jnum = tokens[3]
-#			createdBy = tokens[4]
 		except:
 			exit(1, 'Invalid Line (%d): %s\n' % (lineNum, line))
-
 		objectKey = loadlib.verifyObject(accID, mgiTypeKey, None, lineNum, errorFile)
+		if accID in mgiIdsWithSynonyms:
+		    if synonym in synDict[accID]:
+			errorFile.write('Duplicate synonym: %s for %s\n' % (synonym, accID))
+			continue
 		synTypeKey = verifySynonymType(synType, lineNum)
-#		createdByKey = loadlib.verifyUser(createdBy, lineNum, errorFile)
-
-		# if reference is J:0, then no reference is given
-
-		if jnum == 'J:0':
-		    referenceKey = ''
-		else:
-		    referenceKey = loadlib.verifyReference(jnum, lineNum, errorFile)
 
 		if len(synonym) == 0:
 		    errorFile.write('Invalid Synonym:Empty (%d) %s\n' % (lineNum, synonym))
 
 		if objectKey == 0 or \
 			synTypeKey == 0 or \
-			referenceKey == 0 or \
-			createdByKey == 0 or \
 			len(synonym) == 0:
 
 			# set error flag to true
@@ -364,12 +392,13 @@ def bcpFiles():
 	#
 
 	bcpdelim = "|"
-
-	if DEBUG or not bcpon:
-		return
-
 	synFile.close()
-
+        if not bcpon:
+	    print 'Skipping BCP. Mode: %s' % mode
+	    sys.stdout.flush()
+            return
+	print 'Executing BCP'
+	sys.stdout.flush()
 	bcp1 = 'cat %s | bcp %s..%s in %s -c -t\"%s" -S%s -U%s' \
 		% (passwordFileName, db.get_sqlDatabase(), \
 	   	'MGI_Synonym', synFileName, bcpdelim, db.get_sqlServer(), db.get_sqlUser())
@@ -382,11 +411,23 @@ def bcpFiles():
 # Main
 #
 
+print 'Initializing'
+sys.stdout.flush()
 init()
+
+print 'Verifying Load Mode'
+sys.stdout.flush()
 verifyMode()
 setPrimaryKeys()
+
+print 'Creating Lookups'
+sys.stdout.flush()
 loadDictionaries()
+
+print 'Processing Input File'
+sys.stdout.flush()
 processFile()
 bcpFiles()
+
 exit(0)
 

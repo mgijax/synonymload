@@ -1,3 +1,21 @@
+TAG: synonymload-3-5-4-1
+DATE: 09/11/2007
+STAFF: sc
+CHANGES: TR8459
+This product was in transition for handling TR7412 and needed 
+to make changes for this TR
+1) Make more configurable - added JNUM and CREATEDBY, LOGDIR and OUTPUTDIR 
+   changed some config names
+2) synonymload.py - 
+  a) Added new load option to add to existing annotations without first deleting
+  b) changed output file paths to use LOGDIR and OUTPUTDIR
+  c) removed redundant DEBUG flag (really same as 'bcpon')
+  d) added several print statements for logging
+3) Check to see if synonym already exists for object, don't create dups
+4) Add install script
+5) change name of config.default to synonymload.config.default
+6) created synonymload.sh wrapper script
+
 TAG: synonymload-3-5-1-5
 TAG: synonymload-3-5-1-4
 TAG: synonymload-3-5-1-3
