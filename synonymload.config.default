@@ -22,7 +22,7 @@ export CONFIG_MASTER
 . ${CONFIG_MASTER}
 
 # preview (no database changes), load, or reload (first delete by createdBy)
-LOAD_MODE=preview
+LOAD_MODE=load
 export LOAD_MODE
 
 #Jnumber for the load, use J:0 if no Jnumber
