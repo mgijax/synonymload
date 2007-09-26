@@ -1,3 +1,11 @@
+TAG: synonymload-3-5-4-3
+DATE: 09/26/2007
+STAFF: sc
+CHANGES: added referenceKey as global variable to the initialize()
+  function because setting of the reference key in this funciton was
+  having no effect and all bcp records had the default reference key value
+  of 0.
+
 TAG: synonymload-3-5-4-2
 TAG: synonymload-3-5-4-1
 DATE: 09/11/2007

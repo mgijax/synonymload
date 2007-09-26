@@ -157,9 +157,10 @@ def init():
 	# returns:
 	#
  
-	global inputFile, diagFile, errorFile, errorFileName, diagFileName
-	global synFileName, synFile, synKey, mgiTypeKey, createdByKey
- 
+	global diagFileName, errorFileName, synFileName
+	global inputFile, diagFile, errorFile, synFile
+	global mgiTypeKey, createdByKey, referenceKey
+
 	db.useOneConnection(1)
         db.set_sqlUser(user)
         db.set_sqlPasswordFromFile(passwordFileName)
