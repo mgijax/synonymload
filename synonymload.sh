@@ -4,7 +4,7 @@
 # synonymload jobstream wrapper
 #
 # Usage:
-# 	synonymload.sh
+# 	synonymload.sh fullPathOfSourceFile
 #
 # Purpose:
 #
@@ -13,6 +13,8 @@
 # 09/03/2007	sc
 #	- TR8459 
 #
+
+CONFIG_LOAD=$1
 
 cd `dirname $0`
 
@@ -24,8 +26,9 @@ LOG=`pwd`/`basename $0`.log
 rm -rf ${LOG}
 touch ${LOG}
 
-CONFIG_LOAD=`pwd`/synonymload.config
+#CONFIG_LOAD=`pwd`/synonymload.config
 echo "config: ${CONFIG_LOAD}"
+
 #
 # verify & source the synonym load configuration file
 #
