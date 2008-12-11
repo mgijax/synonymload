@@ -171,6 +171,9 @@ def init():
 	errorFileName = logDir + '/' + tail + '.' + fdate + '.error'
 	synFileName = outputDir + '/' + tail + '.MGI_Synonym.bcp'
 
+	print inputFileName
+	print logDir
+
 	try:
 		inputFile = open(inputFileName, 'r')
 	except:
@@ -308,20 +311,23 @@ def loadDictionaries():
 
 	# create existing synonym lookup for all MGI accessioned objects
 	results = db.sql('select a.accid as mgiID, s.synonym ' + \
-	    'from ACC_Accession a, MGI_Synonym s ' + \
-	    'where a._LogicalDB_key = 1 ' + \
-	    'and a.preferred = 1 ' + \
+	    'from MRK_Marker m, ACC_Accession a, MGI_Synonym s ' + \
+	    'where m._Organism_key = 1 ' + \
+	    'and m._Marker_key = a._Object_key ' + \
+	    'and a._LogicalDB_key = 1 ' + \
+	    'and a._MGIType_key = 2 ' + \
 	    'and a.prefixPart = "MGI:" ' + \
+	    'and a.preferred = 1 ' + \
 	    'and a._MGIType_key = s._MGIType_key ' + \
 	    'and a._Object_key = s._Object_key', 'auto')
 	for r in results:
 	    mgiID = r['mgiID']
-	    
 	    synonym = r['synonym']
 	    if mgiID not in synDict.keys():
 	        synDict[mgiID] = [synonym]
 	    else:
 		synDict[mgiID].append(synonym)
+
 def processFile():
 	# requires:
 	#
@@ -335,6 +341,7 @@ def processFile():
 
 	global synKey
         mgiIdsWithSynonyms = synDict.keys()
+
 	lineNum = 0
 
 	# For each line in the input file
@@ -353,11 +360,14 @@ def processFile():
 			synType = tokens[2]
 		except:
 			exit(1, 'Invalid Line (%d): %s\n' % (lineNum, line))
+
 		objectKey = loadlib.verifyObject(accID, mgiTypeKey, None, lineNum, errorFile)
+
 		if accID in mgiIdsWithSynonyms:
 		    if synonym in synDict[accID]:
 			errorFile.write('Duplicate synonym: %s for %s\n' % (synonym, accID))
 			continue
+
 		synTypeKey = verifySynonymType(synType, lineNum)
 
 		if len(synonym) == 0:
