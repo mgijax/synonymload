@@ -34,7 +34,7 @@ CREATEDBY=mirbase_synload
 export CREATEDBY
 
 # output directory 
-DATADIR=/data/loads/synonymload/mirbase
+DATADIR=${DATALOADSOUTPUT}/synonymload/mirbase
 export DATADIR
 
 # full path to input file, typically a TR directory
