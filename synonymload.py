@@ -83,6 +83,9 @@ import db
 import mgi_utils
 import loadlib
 
+db.setAutoTranslate(False)
+db.setAutoTranslateBE(False)
+
 #globals
 
 #
@@ -99,7 +102,6 @@ logDir = os.environ['LOGDIR']
 outputDir = os.environ['OUTPUTDIR']
 
 bcpon = 1		# can the bcp files be bcp-ed into the database?  
-			# DEFAult is yes.
 
 inputFile = ''		# file descriptor
 diagFile = ''		# file descriptor
