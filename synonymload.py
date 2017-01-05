@@ -88,8 +88,8 @@ import loadlib
 #
 # from configuration file
 #
-user = os.environ['MGD_DBUSER']
-passwordFileName = os.environ['MGD_DBPASSWORDFILE']
+user = os.environ['PG_DBUSER']
+passwordFileName = os.environ['PG_1LINE_PASSFILE']
 mode = os.environ['LOAD_MODE']
 mgiType = os.environ['OBJECT_TYPE']
 inputFileName = os.environ['INPUTFILE']
@@ -97,6 +97,8 @@ createdBy = os.environ['CREATEDBY']
 jnum = os.environ['JNUM']
 logDir = os.environ['LOGDIR']
 outputDir = os.environ['OUTPUTDIR']
+
+bcpCommand = os.environ['PG_DBUTILS'] + '/bin/bcpin.csh '
 
 bcpon = 1		# can the bcp files be bcp-ed into the database?  
 
@@ -164,11 +166,10 @@ def init():
         db.set_sqlUser(user)
         db.set_sqlPasswordFromFile(passwordFileName)
  
-	fdate = mgi_utils.date('%m%d%Y')	# current date
 	head, tail = os.path.split(inputFileName) 
-	diagFileName = logDir + '/' + tail + '.' + fdate + '.diagnostics'
-	errorFileName = logDir + '/' + tail + '.' + fdate + '.error'
-	synFileName = outputDir + '/' + tail + '.MGI_Synonym.bcp'
+	diagFileName = logDir + '/' + tail + '.diagnostics'
+	errorFileName = logDir + '/' + tail + '.error'
+	synFileName = 'MGI_Synonym.bcp'
 
 	print inputFileName
 	print logDir
@@ -189,7 +190,7 @@ def init():
 		exit(1, 'Could not open file %s\n' % errorFileName)
 		
 	try:
-		synFile = open(synFileName, 'w')
+		synFile = open(outputDir + '/' + synFileName, 'w')
 	except:
 		exit(1, 'Could not open file %s\n' % synFileName)
 		
@@ -399,7 +400,6 @@ def bcpFiles():
 	#	nothing
 	#
 
-	bcpdelim = "|"
 	synFile.close()
         if not bcpon:
 	    print 'Skipping BCP. Mode: %s' % mode
@@ -407,13 +407,11 @@ def bcpFiles():
             return
 	print 'Executing BCP'
 	sys.stdout.flush()
-	bcp1 = 'cat %s | bcp %s..%s in %s -c -t\"%s" -S%s -U%s' \
-		% (passwordFileName, db.get_sqlDatabase(), \
-	   	'MGI_Synonym', synFileName, bcpdelim, db.get_sqlServer(), db.get_sqlUser())
-
+	db.commit()
+	bcp1 = bcpCommand % ('MGI_Synonym', synFileName)
 	diagFile.write('%s\n' % bcp1)
-
 	os.system(bcp1)
+	db.commit()
 
 #
 # Main
