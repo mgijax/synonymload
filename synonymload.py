@@ -83,9 +83,6 @@ import db
 import mgi_utils
 import loadlib
 
-db.setAutoTranslate(False)
-db.setAutoTranslateBE(False)
-
 #globals
 
 #
@@ -199,9 +196,6 @@ def init():
 	# Log all SQL
 	db.set_sqlLogFunction(db.sqlLogAll)
 
-	# Set Log File Descriptor
-	db.set_sqlLogFD(diagFile)
-
 	diagFile.write('Start Date/Time: %s\n' % (mgi_utils.date()))
 	diagFile.write('Server: %s\n' % (db.get_sqlServer()))
 	diagFile.write('Database: %s\n' % (db.get_sqlDatabase()))
@@ -288,7 +282,7 @@ def setPrimaryKeys():
 
 	global synKey
 
-        results = db.sql('select maxKey = max(_Synonym_key) + 1 from MGI_Synonym', 'auto')
+        results = db.sql('select max(_Synonym_key) + 1 from MGI_Synonym as maxKey', 'auto')
         if results[0]['maxKey'] is None:
                 synKey = 1000
         else:
@@ -312,16 +306,17 @@ def loadDictionaries():
 		synTypeDict[r['synonymType']] = r['_SynonymType_key']
 
 	# create existing synonym lookup for all MGI accessioned objects
-	results = db.sql('select a.accid as mgiID, s.synonym ' + \
-	    'from MRK_Marker m, ACC_Accession a, MGI_Synonym s ' + \
-	    'where m._Organism_key = 1 ' + \
-	    'and m._Marker_key = a._Object_key ' + \
-	    'and a._LogicalDB_key = 1 ' + \
-	    'and a._MGIType_key = 2 ' + \
-	    'and a.prefixPart = "MGI:" ' + \
-	    'and a.preferred = 1 ' + \
-	    'and a._MGIType_key = s._MGIType_key ' + \
-	    'and a._Object_key = s._Object_key', 'auto')
+	results = db.sql('''select a.accid as mgiID, s.synonym 
+	    from MRK_Marker m, ACC_Accession a, MGI_Synonym s
+	    where m._Organism_key = 1 
+	    and m._Marker_key = a._Object_key 
+	    and a._LogicalDB_key = 1 
+	    and a._MGIType_key = 2 
+	    and a.prefixPart = 'MGI:' 
+	    and a.preferred = 1 
+	    and a._MGIType_key = s._MGIType_key 
+	    and a._Object_key = s._Object_key
+	    ''', 'auto')
 	for r in results:
 	    mgiID = r['mgiID']
 	    synonym = r['synonym']
