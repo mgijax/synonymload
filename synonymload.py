@@ -283,7 +283,7 @@ def setPrimaryKeys():
 
 	global synKey
 
-        results = db.sql('''' select nextval('mgi_synonym_seg') as maxKey ''', 'auto')
+        results = db.sql(''' select nextval('mgi_synonym_seg') as maxKey ''', 'auto')
         synKey = results[0]['maxKey']
 
 def loadDictionaries():
