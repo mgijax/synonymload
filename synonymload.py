@@ -283,11 +283,8 @@ def setPrimaryKeys():
 
 	global synKey
 
-        results = db.sql('select max(_Synonym_key) + 1 from MGI_Synonym as maxKey', 'auto')
-        if results[0]['maxKey'] is None:
-                synKey = 1000
-        else:
-                synKey = results[0]['maxKey']
+        results = db.sql('''' select nextval('mgi_synonym_seg') as maxKey ''', 'auto')
+        synKey = results[0]['maxKey']
 
 def loadDictionaries():
 	# requires:
@@ -401,17 +398,24 @@ def bcpFiles():
 	#
 
 	synFile.close()
+
         if not bcpon:
 	    print 'Skipping BCP. Mode: %s' % mode
 	    sys.stdout.flush()
             return
+
 	print 'Executing BCP'
 	sys.stdout.flush()
 	db.commit()
+
 	bcp1 = bcpCommand % ('MGI_Synonym', synFileName)
 	diagFile.write('%s\n' % bcp1)
 	os.system(bcp1)
 	db.commit()
+
+        # update mgi_synonym_seq auto-sequence
+        db.sql(''' select setval('mgi_synonym_seq', (select max(_Synonym_key) from MGI_Synonym)) ''', None)
+        db.commit()
 
 #
 # Main
